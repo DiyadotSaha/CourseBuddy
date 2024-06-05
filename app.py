@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import requests
@@ -15,9 +14,13 @@ from langchain_community.llms import HuggingFaceEndpoint
 from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain.prompts import PromptTemplate
 from langchain.vectorstores import Chroma
+from langchain.llms import HuggingFaceHub
+
 from langchain_community.embeddings import OpenAIEmbeddings 
 import getpass
-
+from langchain.chains import LLMChain
+import time
+ 
 def extract_info_from_url(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -59,64 +62,78 @@ def createVectorStore():
     return vectorstore
     
 def loadVectorStore():
-    final_path='faissDB'
-    embeddings=HuggingFaceEmbeddings(model_name='WhereIsAI/UAE-Large-V1')
-    vectorstore = FAISS.load_local(final_path,embeddings,allow_dangerous_deserialization=True)
+    final_path='/Users/abhinandganesh/Downloads/faissDB'
+    model_id='WhereIsAI/UAE-Large-V1'
+    embeddings=HuggingFaceEmbeddings(model_name=model_id)
+    #vectorstore = FAISS.load_local(final_path,embeddings,allow_dangerous_deserialization=True)
+    vectorstore = FAISS.load_local(final_path,embeddings=embeddings)
     return vectorstore
 
-def creatingChain():
-    repo_id = "mistralai/Mistral-7B-Instruct-v0.2"
-    os.environ["HUGGINGFACEHUB_API_TOKEN"] = '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'
-    llm = HuggingFaceEndpoint(
-        repo_id=repo_id,
-        max_length=128,
-        temperature=0.5,
-        token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
-    )
-    template = """You are Shakespeare and based on the context, always write one verse.
-    Question: {question} 
-    Context: {summaries}
-    Answer:"""
-    chain = RetrievalQAWithSourcesChain.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(),
-        chain_type_kwargs={
-        "prompt": PromptTemplate(
-            template=template,
-            input_variables=["summaries", "question"],
-            ),
-        },
-    )
-    return chain
+
+
+
 
 def ask_question(question,chain):
     resp = chain.invoke({"question": question})
     return resp['answer']
 
 
-
 if __name__ == "__main__":
     vectorstore = loadVectorStore()
-    print ("==== LOADED VECTOR DATABASE ===")
-    st.title("Course Buddy")
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = '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'
+
+
+    llm = HuggingFaceHub(repo_id='mistralai/Mixtral-8x7B-Instruct-v0.1', huggingfacehub_api_token='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',model_kwargs={"temperature": 0.7, "max_length": 64, "max_new_tokens": 512})
+    llm.client.api_url = 'https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1'
+
+    print("==== LOADED VECTOR DATABASE ===")
+
+
     if "messages" not in st.session_state:
-        st.session_state.messages = []
-    for message in st.session_state.keys():
+        st.session_state.messages= []
+
+
+    for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("What is up?"):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        # Display user message in chat message container
+
+    prompt=st.chat_input("Ask something!")
+    if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
-        # Get response from backend
-        chain = creatingChain()
-        response = ask_question(prompt, chain)
-        # Display assistant response in chat message container
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        question=prompt
+
+        docs = vectorstore.similarity_search(question)
+        print(docs)
+
+
+        prompt_template = """ You are a nice and helpful AI chat bot. Do not try to complete the question. Generate an answer based on the context and question.
+    If the answer is not found in the context, kindly state "I don't know." Don't try to make up an answer. Give proper and LONG answers.
+    QUESTION: {question}
+    CONTEXT: {context}
+        """ 
+        PROMPT = PromptTemplate(
+            template=prompt_template, input_variables=["context", "question"]
+        )
+        llm_chain = LLMChain(llm=llm, prompt=PROMPT)
+        response=llm_chain.run({'context':docs, 'question':question})
+
+
+        #chain = creatingChain()
+        #response = ask_question(question, chain)
+
         with st.chat_message("assistant"):
-            st.markdown(response)
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            message_placeholder=st.empty()
+            assistant_response = response
+            full_response = ""
+            for chunk in assistant_response.split():
+                full_response += chunk + " "
+                time.sleep(0.05)
+                message_placeholder.markdown(full_response + "▌")
+            message_placeholder.markdown(full_response)
+
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+
