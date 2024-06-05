@@ -80,10 +80,11 @@ def ask_question(question,chain):
 
 if __name__ == "__main__":
     vectorstore = loadVectorStore()
-    os.environ["HUGGINGFACEHUB_API_TOKEN"] = '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'
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = '' #INSERT TOKEN
 
 
-    llm = HuggingFaceHub(repo_id='mistralai/Mixtral-8x7B-Instruct-v0.1', huggingfacehub_api_token='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',model_kwargs={"temperature": 0.7, "max_length": 64, "max_new_tokens": 512})
+    #INSERT TOKEN
+    llm = HuggingFaceHub(repo_id='mistralai/Mixtral-8x7B-Instruct-v0.1', huggingfacehub_api_token='',model_kwargs={"temperature": 0.7, "max_length": 64, "max_new_tokens": 512})
     llm.client.api_url = 'https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1'
 
     print("==== LOADED VECTOR DATABASE ===")
@@ -111,7 +112,6 @@ if __name__ == "__main__":
 
 
         prompt_template = """ You are a nice and helpful AI chat bot. Do not try to complete the question. Generate an answer based on the context and question.
-    If the answer is not found in the context, kindly state "I don't know." Don't try to make up an answer. Give proper and LONG answers.
     QUESTION: {question}
     CONTEXT: {context}
         """ 
