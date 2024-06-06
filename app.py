@@ -20,6 +20,8 @@ from langchain_community.embeddings import OpenAIEmbeddings
 import getpass
 from langchain.chains import LLMChain
 import time
+global_token = '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'
+
  
 def extract_info_from_url(url):
     response = requests.get(url)
@@ -62,7 +64,7 @@ def createVectorStore():
     return vectorstore
     
 def loadVectorStore():
-    final_path='/Users/abhinandganesh/Downloads/faissDB'
+    final_path='/Users/diyasaha/CourseBuddy/faissDB'
     model_id='WhereIsAI/UAE-Large-V1'
     embeddings=HuggingFaceEmbeddings(model_name=model_id)
     #vectorstore = FAISS.load_local(final_path,embeddings,allow_dangerous_deserialization=True)
@@ -79,38 +81,29 @@ def ask_question(question,chain):
 
 
 if __name__ == "__main__":
+    st.title("CourseBuddy")
+    st.subheader("Your friendly AI chat bot for course-related queries")
+    st.write("Hello! I am CourseBuddy, your friendly AI chat bot. Feel free to ask me anything related to courses!")
     vectorstore = loadVectorStore()
-    os.environ["HUGGINGFACEHUB_API_TOKEN"] = '' #INSERT TOKEN
-
-
-    #INSERT TOKEN
-    llm = HuggingFaceHub(repo_id='mistralai/Mixtral-8x7B-Instruct-v0.1', huggingfacehub_api_token='',model_kwargs={"temperature": 0.7, "max_length": 64, "max_new_tokens": 512})
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = global_token
+    llm = HuggingFaceHub(repo_id='mistralai/Mixtral-8x7B-Instruct-v0.1', 
+                         huggingfacehub_api_token=global_token,
+                         model_kwargs={"temperature": 0.7, "max_length": 64, "max_new_tokens": 512})
     llm.client.api_url = 'https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1'
-
     print("==== LOADED VECTOR DATABASE ===")
-
-
     if "messages" not in st.session_state:
         st.session_state.messages= []
-
-
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
-
     prompt=st.chat_input("Ask something!")
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
-
         question=prompt
-
         docs = vectorstore.similarity_search(question)
         print(docs)
-
-
         prompt_template = """ You are a nice and helpful AI chat bot. Do not try to complete the question. Generate an answer based on the context and question.
     QUESTION: {question}
     CONTEXT: {context}
@@ -120,11 +113,6 @@ if __name__ == "__main__":
         )
         llm_chain = LLMChain(llm=llm, prompt=PROMPT)
         response=llm_chain.run({'context':docs, 'question':question})
-
-
-        #chain = creatingChain()
-        #response = ask_question(question, chain)
-
         with st.chat_message("assistant"):
             message_placeholder=st.empty()
             assistant_response = response
@@ -134,6 +122,5 @@ if __name__ == "__main__":
                 time.sleep(0.05)
                 message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
-
         st.session_state.messages.append({"role": "assistant", "content": full_response})
 
