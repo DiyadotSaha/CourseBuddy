@@ -67,18 +67,12 @@ def loadVectorStore():
     final_path='/Users/diyasaha/CourseBuddy/faissDB'
     model_id='WhereIsAI/UAE-Large-V1'
     embeddings=HuggingFaceEmbeddings(model_name=model_id)
-    #vectorstore = FAISS.load_local(final_path,embeddings,allow_dangerous_deserialization=True)
     vectorstore = FAISS.load_local(final_path,embeddings=embeddings)
     return vectorstore
-
-
-
-
 
 def ask_question(question,chain):
     resp = chain.invoke({"question": question})
     return resp['answer']
-
 
 if __name__ == "__main__":
     st.title("CourseBuddy")
