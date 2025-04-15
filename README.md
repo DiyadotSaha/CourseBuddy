@@ -6,7 +6,7 @@ A context-aware chatbot designed for UCI students, offering quick access to cour
 
 ![CourseBuddy Demo](vid_demo.gif)
 
---
+---
 ## How It's Made
 
 **Tech used:** Python, Streamlit, LangChain, FAISS, HuggingFace Transformers, BeautifulSoup
