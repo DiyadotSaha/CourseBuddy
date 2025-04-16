@@ -49,5 +49,4 @@ CourseBuddy is built as a Retrieval-Augmented Generation (RAG) system to provide
 Developing CourseBuddy provided insights into:
 
 - **RAG Systems:** Understanding the integration of retrieval mechanisms with generative models to enhance response accuracy.
-- **Data Handling:** Managing and preprocessing real-world data for use in AI applications.
 - **User Experience:** Designing intuitive interfaces that effectively convey AI-generated information to users.
